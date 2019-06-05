@@ -1,4 +1,5 @@
 var mysql = require("mysql");
+var inquirer = require("inquirer");
 
 var connection = mysql.createConnection({
     host: "localhost",
@@ -16,32 +17,65 @@ var connection = mysql.createConnection({
 
   connection.connect(function(err) {
     if (err) throw err;
-    runSearch();
+    start();
   });
   
-  function runSearch(){
+  function start(){
+  connection.query("SELECT * FROM products", function(err, results){
+    if (err) throw err;
+  
   inquirer
     .prompt([
     {
-      name: "itemID",
-      type: "input",
-      message:"What item id would you like to buy? (1-10)",
+      name: "choice",
+      type: "rawlist",
+      choices: function(){
+        var choiceArray = [];
+        for (var i=0; i < results.length; i++){
+          choiceArray.push(results[i].product_name );
+        }
+        return choiceArray;
+     },
+      message:"What item id would you like to buy?",
     },
     {
-      name: "amount",
-      type: "input",
-      message: " How many would you like to purchase?",        
-    }
-    ])
-    .then(function(quantity){
-      var query = "SELECT stock_quantity FROM products WHERE ?"
-      connection.query(query, [quantity.amount], function (err, res){
-        for (var i = 0; i < res.length; i++) {
-          console.log("stock_quantity" -1);
+    name: "amount",
+    type: "input",
+    message: " How many would you like to purchase?"
+  }
+])
+    .then(function(answer){
+      var chosenItem;
+      for (var i=0; i < results.length; i++){
+        if(results[i].id === answer.choice){
+          chosenItem = results[i];
+        }
       }
-      runSearch();
+      
+      if (chosenItem.quantity_remaining < parseInt(answer.amount)){
+        connection.query(
+          "UPDATE products SET ? WHERE ?",
+          [
+            {
+              quantity_remaining: answer.amount
+            },
+            {
+              id: chosenItem.id
+            }
+          ],
+          function(error){
+            if (error) throw err;
+            console.log("Stock quantitiy updated");
+            start();
+          }
+        );
+      }
+      else{
+        console.log("There are no items left in stock. Try again..");
+        start();
+      }
     });
-    });
+  });
   };
       
   
