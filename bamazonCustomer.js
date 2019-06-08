@@ -51,16 +51,16 @@ var connection = mysql.createConnection({
           chosenItem = results[i];
         }
         // determine if bid was high enough
-        if (chosenItem.stock_quantity < parseInt(answer.amount)) {
+        if (results[i].stock_quantity >= parseInt(answer.amount)) {
           // bid was high enough, so update db, let the user know, and start over
           connection.query(
             "UPDATE products SET ? WHERE ?",
             [
               {
-                stock_quantity: answer.amount
+                stock_quantity: chosenItem.stock_quantity - answer.amount
               },
               {
-                id: chosenItem.product_name
+                product_name: chosenItem.product_name 
               }
             ],
             function(error) {
@@ -73,7 +73,7 @@ var connection = mysql.createConnection({
         else {
           // bid wasn't high enough, so apologize and start over
           console.log("Not enought items in stock. Try again...");
-          start();
+          connection.end();
         }
         };    
   });
