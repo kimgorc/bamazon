@@ -24,59 +24,50 @@ var connection = mysql.createConnection({
   connection.query("SELECT * FROM products", function(err, results){
     if (err) throw err;
   
-  inquirer
-    .prompt([
-    {
-      name: "choice",
-      type: "rawlist",
-      choices: function(){
-        var choiceArray = [];
-        for (var i=0; i < results.length; i++){
-          choiceArray.push(results[i].product_name );
-        }
-        return choiceArray;
-     },
-      message:"What item id would you like to buy?",
-    },
-    {
-    name: "amount",
-    type: "input",
-    message: " How many would you like to purchase?"
-  }
-])
+    inquirer
+      .prompt([
+      {
+        name: "choice",
+        type: "rawlist",
+        choices: function(){
+          var choiceArray = [];
+          for (var i=0; i < results.length; i++){
+            choiceArray.push(results[i].product_name );
+          }
+          return choiceArray;
+      },
+        message:"What item id would you like to buy?",
+      },
+      {
+        name: "amount",
+        type: "input",
+        message: " How many would you like to purchase?"
+      }
+    ])
     .then(function(answer){
       var chosenItem;
       for (var i=0; i < results.length; i++){
-        if(results[i].id === answer.choice){
+        if (answer.amount <= results[i].stock_quantity){
           chosenItem = results[i];
-        }
-      }
-      
-      if (chosenItem.quantity_remaining < parseInt(answer.amount)){
-        connection.query(
-          "UPDATE products SET ? WHERE ?",
-          [
-            {
-              quantity_remaining: answer.amount
-            },
-            {
-              id: chosenItem.id
-            }
-          ],
-          function(error){
-            if (error) throw err;
-            console.log("Stock quantitiy updated");
-            start();
-          }
-        );
-      }
-      else{
-        console.log("There are no items left in stock. Try again..");
-        start();
-      }
-    });
+          console.log ("Items are in stock, placing order");
+        };
+          var updateQuery = 'UPDATE products SET stock_quantity =' 
+          
+            + (chosenItem.stock_quantity - answer.amount) 
+            + 'WHERE choice=' + chosenItem.product_name;
+      };
+            // Update the inventory
+            function(error) {
+              if (error) throw err;
+				    	console.log('There are' + updateQuery + 'items left in stock');
+
+						// End the database connection
+            connection.end();
+            };
+        });    
   });
   };
+  
       
   
   
