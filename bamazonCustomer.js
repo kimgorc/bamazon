@@ -47,27 +47,39 @@ var connection = mysql.createConnection({
     .then(function(answer){
       var chosenItem;
       for (var i=0; i < results.length; i++){
-        if (answer.amount <= results[i].stock_quantity){
+        if (results[i].product_name === answer.amount){
           chosenItem = results[i];
-          console.log ("Items are in stock, placing order");
-        };
-          var updateQuery = 'UPDATE products SET stock_quantity =' 
-          
-            + (chosenItem.stock_quantity - answer.amount) 
-            + 'WHERE choice=' + chosenItem.product_name;
-      };
-            // Update the inventory
+        }
+        // determine if bid was high enough
+        if (chosenItem.stock_quantity < parseInt(answer.amount)) {
+          // bid was high enough, so update db, let the user know, and start over
+          connection.query(
+            "UPDATE products SET ? WHERE ?",
+            [
+              {
+                stock_quantity: answer.amount
+              },
+              {
+                id: chosenItem.product_name
+              }
+            ],
             function(error) {
               if (error) throw err;
-				    	console.log('There are' + updateQuery + 'items left in stock');
-
-						// End the database connection
-            connection.end();
-            };
-        });    
+              console.log("Order placed successfully!");
+              start();
+            }
+          );
+        }
+        else {
+          // bid wasn't high enough, so apologize and start over
+          console.log("Not enought items in stock. Try again...");
+          start();
+        }
+        };    
   });
-  };
-  
-      
-  
+  });
+}
+   
+
+
   
